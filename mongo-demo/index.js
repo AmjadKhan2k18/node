@@ -10,29 +10,62 @@ mongoose.connect('mongodb://localhost/playground')
 
 //Validation using required keyword
 const courseSchema = mongoose.Schema({
-    name: { type: String, required: true },
+    name: {
+        type: String,
+        required: true,
+        minlength: 6,
+        maxlength: 15,
+        // match: /pattern/  reguler expression
+    },
     author: String,
-    tags: [String],
+    tags: {
+        type: Array,
+        validate: {
+            isAsync: true,
+            validator: function (v, callback) {
+                setTimeout(() => {
+                    const result = v && v.length > 0;
+                    callback(result);
+                }, 1000);
+            },
+            message: 'A course should have at least one tag.'
+        }
+    },
+    category: {
+        type: String,
+        enum: ['web', 'network', 'graphics', 'mobile'],
+        required: true,
+    },
     date: { type: Date, default: Date.now },
-    isPublished: Boolean
+    isPublished: Boolean,
+    price: {
+        type: Number,
+        required: function () { return this.isPublished },
+        min: 20,
+        max: 500,
+    }
 });
 const Course = mongoose.model('Course', courseSchema);
 async function createCourse() {
-    try {
-        console.log('pushing data');
 
-        const course = new Course({
-            // name: 'node.js Course',
-            author: 'Mosh',
-            tags: ['node', 'MongoDb'],
-            isPublished: true
-        });
+    const course = new Course({
+        name: 'Flutter course',
+        author: 'Amjad',
+        category: '-',
+        tags: [],
+        isPublished: true,
+        price: 200
+    });
+
+    try {
 
         const result = course.save();
         console.log(result);
     }
-    catch (error) {
-        console.log(error.message);
+    catch (ex) {
+        for(field in ex.errors){
+            console.log(ex.errors[field]);
+        }
     };
 }
 
